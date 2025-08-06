@@ -14,4 +14,15 @@ The AI Career Advisor is an intelligent, LLM-powered assistant that provides per
 
 - RAG (Retrieval-Augmented Generation) to fetch up-to-date job listings, resume tips, and career insights from external sources
 
+
+Users can chat with the advisor to:
+
+- Discover roles that fit their profile
+
+- Understand what skills they need to improve
+
+- Get course recommendations to bridge those gaps
+
+- Receive personalized resume and interview tips
+
  **Ideal for students, job seekers, and professionals looking to plan or enhance their career path effectively.**
