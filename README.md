@@ -2,7 +2,7 @@
  
 The AI Career Advisor is an intelligent, LLM-powered assistant that provides personalized career guidance to users based on their skills, interests, and goals. It analyzes user input to suggest suitable job roles, identify skill gaps, recommend learning resources, and offer resume improvement tips.
 
-- This application utilizes advanced AI features such as:
+# This application utilizes advanced AI features such as:
 
 - System & User Prompting to guide meaningful conversations
 
