@@ -1,5 +1,4 @@
-
-// server.js - Node.js Express version for AI Career Advisor
+// server.js - Zero Shot Prompting Example
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -8,32 +7,45 @@ const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
-// POST endpoint for career advice
-app.post('/career-advice', async (req, res) => {
+// POST endpoint for career advice with Zero-Shot Prompting
+app.post('/career-advice-zero-shot', async (req, res) => {
     try {
         // 1. Get user input
         const { skills, interests, goals } = req.body;
 
-        // 2. Example RAG context (replace with real data or API calls)
-        const ragContext = `\nLatest job market trends: AI, Data Science, Cloud Computing.\nTop skills in demand: Python, Machine Learning, Communication.\nRecommended resources: Coursera, edX, LinkedIn Learning.\n`;
+        // 2. Zero-Shot Prompt (no examples, only instruction)
+        const zeroShotPrompt = `
+        You are an AI Career Advisor.
+        Analyze the user's profile and provide:
+        - Suggested job roles
+        - Skill gaps
+        - Recommended learning resources
+        - Resume improvement tips
 
-        // 3. System prompt (for LLM)
-        const systemPrompt = `\nYou are an AI Career Advisor. Analyze the user's skills, interests, and goals. Suggest suitable job roles, identify skill gaps, recommend learning resources, and offer resume tips. Use the context below for accuracy:\n${ragContext}\nFormat output as: roles, skill_gaps, resources, resume_tips.\n`;
+        User Profile:
+        Skills: ${skills}
+        Interests: ${interests}
+        Goals: ${goals}
+        `;
 
-        // 4. User prompt
-        const userPrompt = `\nUser profile:\n- Skills: ${skills}\n- Interests: ${interests}\n- Goals: ${goals}\n`;
-
-        // 5. Placeholder for AI model call (replace with Gemini/OpenAI API as needed)
-        // Example output structure
+        // 3. Simulate AI response (replace with real Gemini/OpenAI API later)
+        // Here we pretend the AI understood the zero-shot prompt
         const aiResponse = {
-            suggested_roles: ['Data Scientist', 'AI Engineer'],
-            skill_gaps: ['Deep Learning', 'Cloud Platforms'],
-            learning_resources: ['Deep Learning Specialization - Coursera', 'AWS Cloud Practitioner - edX'],
-            resume_tips: ['Highlight AI projects', 'Quantify achievements', 'Tailor resume for each job']
+            suggested_roles: ['Machine Learning Engineer', 'Data Analyst'],
+            skill_gaps: ['Statistics', 'TensorFlow'],
+            learning_resources: [
+                'Introduction to Statistical Learning - Coursera',
+                'TensorFlow Developer Certificate - Udemy'
+            ],
+            resume_tips: [
+                'Add projects that show ML applications',
+                'Emphasize analytical problem-solving',
+                'Include measurable results from past work'
+            ]
         };
 
-        // 6. Return the AI response
-        res.json({ plan: aiResponse });
+        // 4. Return AI response
+        res.json({ prompt_used: zeroShotPrompt, plan: aiResponse });
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ plan: '', error: error.message });
