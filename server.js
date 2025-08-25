@@ -8,9 +8,8 @@ const PORT = process.env.PORT || 3000;
 app.use(bodyParser.json());
 
 /**
- * ------------------------------
  * ZERO-SHOT PROMPTING
- * ------------------------------
+ * (Only instructions, no examples)
  */
 app.post('/career-advice-zero-shot', async (req, res) => {
     try {
@@ -30,7 +29,6 @@ app.post('/career-advice-zero-shot', async (req, res) => {
         Goals: ${goals}
         `;
 
-        // Mock AI response
         const aiResponse = {
             suggested_roles: ['Machine Learning Engineer', 'Data Analyst'],
             skill_gaps: ['Statistics', 'TensorFlow'],
@@ -45,68 +43,116 @@ app.post('/career-advice-zero-shot', async (req, res) => {
             ]
         };
 
-        res.json({ prompting_type: "zero-shot", prompt_used: zeroShotPrompt, plan: aiResponse });
+        res.json({ prompt_used: zeroShotPrompt, plan: aiResponse });
     } catch (error) {
-        console.error('Error:', error);
         res.status(500).json({ plan: '', error: error.message });
     }
 });
 
 /**
- * ------------------------------
  * ONE-SHOT PROMPTING
- * ------------------------------
+ * (Instruction + 1 example)
  */
 app.post('/career-advice-one-shot', async (req, res) => {
     try {
         const { skills, interests, goals } = req.body;
 
-        // One-shot prompting: instruction + one example
         const oneShotPrompt = `
         You are an AI Career Advisor.
-        Provide personalized advice in the following structure:
-        - Suggested job roles
-        - Skill gaps
-        - Recommended learning resources
-        - Resume improvement tips
-
         Example:
         User Profile:
-        Skills: Python, SQL
-        Interests: Data Analysis
-        Goals: Become a Data Scientist
+        Skills: HTML, CSS
+        Interests: Web design
+        Goals: Build creative websites
+        Output:
+        Suggested Roles: Frontend Developer, UI Designer
+        Skill Gaps: JavaScript, React
+        Learning Resources: "JavaScript for Beginners - Udemy", "React Docs"
+        Resume Tips: Highlight design projects, Show creativity in portfolio
 
-        AI Response:
-        Suggested Roles: Data Scientist, Business Intelligence Analyst
-        Skill Gaps: Machine Learning, Deep Learning
-        Learning Resources: "Hands-On Machine Learning with Scikit-Learn", Coursera ML Course
-        Resume Tips: Add data-driven projects, emphasize SQL queries and business insights.
+        Now analyze this new user:
 
-        ----------------------------
-        Now analyze this new profile:
         Skills: ${skills}
         Interests: ${interests}
         Goals: ${goals}
         `;
 
-        // Mock AI response
         const aiResponse = {
-            suggested_roles: ['AI Researcher', 'NLP Engineer'],
-            skill_gaps: ['Deep Learning', 'Transformers'],
+            suggested_roles: ['Full Stack Developer', 'Backend Engineer'],
+            skill_gaps: ['Node.js', 'Database Management'],
             learning_resources: [
-                'Deep Learning Specialization - Coursera',
-                'Natural Language Processing with Transformers - HuggingFace'
+                'Node.js Complete Guide - Udemy',
+                'MongoDB University Free Courses'
             ],
             resume_tips: [
-                'Showcase NLP projects',
-                'Highlight Python and ML framework experience',
-                'Add research/publications if any'
+                'Include backend projects',
+                'Showcase problem-solving in code',
+                'Mention teamwork in projects'
             ]
         };
 
-        res.json({ prompting_type: "one-shot", prompt_used: oneShotPrompt, plan: aiResponse });
+        res.json({ prompt_used: oneShotPrompt, plan: aiResponse });
     } catch (error) {
-        console.error('Error:', error);
+        res.status(500).json({ plan: '', error: error.message });
+    }
+});
+
+/**
+ * FEW-SHOT (MULTI-SHOT) PROMPTING
+ * (Instruction + multiple examples)
+ */
+app.post('/career-advice-few-shot', async (req, res) => {
+    try {
+        const { skills, interests, goals } = req.body;
+
+        const fewShotPrompt = `
+        You are an AI Career Advisor.
+
+        Example 1:
+        User Profile:
+        Skills: Python, Data Cleaning
+        Interests: Analytics
+        Goals: Work in data-driven role
+        Output:
+        Suggested Roles: Data Analyst, Business Intelligence Engineer
+        Skill Gaps: SQL, Power BI
+        Learning Resources: "SQL for Data Analysis - Coursera", "Power BI Basics - Microsoft"
+        Resume Tips: Emphasize data projects, Add measurable results
+
+        Example 2:
+        User Profile:
+        Skills: Java, Problem Solving
+        Interests: Mobile Apps
+        Goals: Become an Android Developer
+        Output:
+        Suggested Roles: Android Developer, Mobile Software Engineer
+        Skill Gaps: Kotlin, Android SDK
+        Learning Resources: "Kotlin Bootcamp - Google", "Android Development for Beginners"
+        Resume Tips: Highlight app projects, Add GitHub links
+
+        Now analyze this new user:
+
+        Skills: ${skills}
+        Interests: ${interests}
+        Goals: ${goals}
+        `;
+
+        const aiResponse = {
+            suggested_roles: ['Cloud Engineer', 'DevOps Engineer'],
+            skill_gaps: ['Docker', 'Kubernetes', 'AWS'],
+            learning_resources: [
+                'AWS Certified Cloud Practitioner - Amazon',
+                'Docker & Kubernetes - Udemy'
+            ],
+            resume_tips: [
+                'Show cloud projects',
+                'Add certifications',
+                'Highlight automation skills'
+            ]
+        };
+
+        res.json({ prompt_used: fewShotPrompt, plan: aiResponse });
+    } catch (error) {
         res.status(500).json({ plan: '', error: error.message });
     }
 });
