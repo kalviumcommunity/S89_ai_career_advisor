@@ -1,228 +1,62 @@
 // server.js - Zero Shot Prompting Example
-require('dotenv').config();
-const express = require('express');
-const bodyParser = require('body-parser');
+import express from "express";
+import dotenv from "dotenv";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { oneShotPrompt } from "./prompts/oneShot.js";
+import { multiShotPrompt } from "./prompts/multiShot.js";
+import { dynamicPrompt } from "./prompts/dynamicPrompt.js";
+import { countTokens } from "./utils/tokenizer.js";
+
+dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.json());
 
-app.use(bodyParser.json());
+// Gemini setup
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-/**
- * ---------------------------
- * ZERO-SHOT PROMPTING
- * ---------------------------
- */
-app.post('/career-advice-zero-shot', async (req, res) => {
-    try {
-        const { skills, interests, goals } = req.body;
+// ----------- ROUTES -------------
 
-        const zeroShotPrompt = `
-        You are an AI Career Advisor.
-        Analyze the user's profile and provide:
-        - Suggested job roles
-        - Skill gaps
-        - Recommended learning resources
-        - Resume improvement tips
+// 🟢 System Prompting
+app.post("/system", async (req, res) => {
+  try {
+    const { userInput } = req.body;
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        User Profile:
-        Skills: ${skills}
-        Interests: ${interests}
-        Goals: ${goals}
-        `;
+    const systemPrompt = `You are a helpful AI assistant for students learning AI.`;
+    const prompt = `${systemPrompt}\nUser: ${userInput}`;
 
-        const aiResponse = {
-            suggested_roles: ['Machine Learning Engineer', 'Data Analyst'],
-            skill_gaps: ['Statistics', 'TensorFlow'],
-            learning_resources: [
-                'Introduction to Statistical Learning - Coursera',
-                'TensorFlow Developer Certificate - Udemy'
-            ],
-            resume_tips: [
-                'Add projects that show ML applications',
-                'Emphasize analytical problem-solving',
-                'Include measurable results from past work'
-            ]
-        };
+    const result = await model.generateContent(prompt);
+    const response = result.response.text();
 
-        res.json({ prompt_type: "Zero-Shot", prompt_used: zeroShotPrompt, plan: aiResponse });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    // count tokens
+    const tokensUsed = countTokens(prompt + response);
+    console.log("Tokens Used:", tokensUsed);
+
+    res.json({ response, tokensUsed });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-/**
- * ---------------------------
- * ONE-SHOT PROMPTING
- * ---------------------------
- */
-app.post('/career-advice-one-shot', async (req, res) => {
-    try {
-        const { skills, interests, goals } = req.body;
-
-        const oneShotPrompt = `
-        You are an AI Career Advisor.
-        Example:
-        User Profile:
-        Skills: Python, SQL
-        Interests: Data
-        Goals: Become a Data Scientist
-
-        AI Response:
-        - Suggested Roles: Data Scientist, Data Analyst
-        - Skill Gaps: Machine Learning, Deep Learning
-        - Resources: Coursera ML, FastAI Deep Learning
-        - Resume Tips: Highlight data-driven projects
-
-        Now analyze this new profile:
-        Skills: ${skills}
-        Interests: ${interests}
-        Goals: ${goals}
-        `;
-
-        const aiResponse = {
-            suggested_roles: ['Full Stack Developer', 'Backend Engineer'],
-            skill_gaps: ['System Design', 'Microservices'],
-            learning_resources: [
-                'System Design Primer - GitHub',
-                'Microservices with Node.js - Udemy'
-            ],
-            resume_tips: [
-                'Show end-to-end projects',
-                'Highlight teamwork and scalability',
-                'Quantify backend performance improvements'
-            ]
-        };
-
-        res.json({ prompt_type: "One-Shot", prompt_used: oneShotPrompt, plan: aiResponse });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+// 🟢 One-shot Prompting
+app.post("/one-shot", async (req, res) => {
+  res.json(await oneShotPrompt(genAI, req.body.userInput));
 });
 
-/**
- * ---------------------------
- * MULTI-SHOT PROMPTING
- * ---------------------------
- */
-app.post('/career-advice-multi-shot', async (req, res) => {
-    try {
-        const { skills, interests, goals } = req.body;
-
-        const multiShotPrompt = `
-        You are an AI Career Advisor.
-        Learn from these examples:
-
-        Example 1:
-        User Profile:
-        Skills: Java, Spring Boot
-        Interests: Web Development
-        Goals: Become a Backend Engineer
-
-        AI Response:
-        - Suggested Roles: Backend Engineer, Java Developer
-        - Skill Gaps: Cloud Computing, Docker
-        - Resources: Spring Boot Microservices, AWS Essentials
-        - Resume Tips: Mention scalable systems and APIs
-
-        Example 2:
-        User Profile:
-        Skills: HTML, CSS, JavaScript
-        Interests: Frontend Development
-        Goals: Become a UI/UX Engineer
-
-        AI Response:
-        - Suggested Roles: Frontend Developer, UI/UX Engineer
-        - Skill Gaps: React, Figma
-        - Resources: React Crash Course, Figma for Beginners
-        - Resume Tips: Show design + coding skills
-
-        Now analyze this new profile:
-        Skills: ${skills}
-        Interests: ${interests}
-        Goals: ${goals}
-        `;
-
-        const aiResponse = {
-            suggested_roles: ['Cloud Engineer', 'DevOps Engineer'],
-            skill_gaps: ['Kubernetes', 'CI/CD'],
-            learning_resources: [
-                'Kubernetes for Beginners - Udemy',
-                'CI/CD with Jenkins - Coursera'
-            ],
-            resume_tips: [
-                'Highlight automation skills',
-                'Add DevOps pipeline contributions',
-                'Show experience with containers'
-            ]
-        };
-
-        res.json({ prompt_type: "Multi-Shot", prompt_used: multiShotPrompt, plan: aiResponse });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+// 🟢 Multi-shot Prompting
+app.post("/multi-shot", async (req, res) => {
+  res.json(await multiShotPrompt(genAI, req.body.userInput));
 });
 
-/**
- * ---------------------------
- * DYNAMIC PROMPTING
- * ---------------------------
- */
-app.post('/career-advice-dynamic', async (req, res) => {
-    try {
-        const { skills, interests, goals, experienceLevel } = req.body;
-
-        const dynamicPrompt = `
-        You are an AI Career Advisor.
-        Tailor the advice based on user’s **experience level**.
-        
-        User Profile:
-        Skills: ${skills}
-        Interests: ${interests}
-        Goals: ${goals}
-        Experience Level: ${experienceLevel}
-
-        Provide:
-        - Job Roles
-        - Skill Gaps
-        - Learning Resources
-        - Resume Tips (adapted to experience level)
-        `;
-
-        let aiResponse = {};
-
-        if (experienceLevel === "Beginner") {
-            aiResponse = {
-                suggested_roles: ['Junior Web Developer', 'Intern - Data Analyst'],
-                skill_gaps: ['Basic Algorithms', 'Databases'],
-                learning_resources: ['CS50 Introduction to Computer Science', 'SQL for Beginners - YouTube'],
-                resume_tips: ['Add academic projects', 'Show eagerness to learn', 'Keep it concise (1 page)']
-            };
-        } else if (experienceLevel === "Intermediate") {
-            aiResponse = {
-                suggested_roles: ['Software Engineer', 'Full Stack Developer'],
-                skill_gaps: ['System Design', 'Cloud Platforms'],
-                learning_resources: ['System Design Interview - Alex Xu', 'AWS for Developers'],
-                resume_tips: ['Show internships', 'Highlight project impacts', 'Emphasize teamwork']
-            };
-        } else {
-            aiResponse = {
-                suggested_roles: ['Tech Lead', 'Solutions Architect'],
-                skill_gaps: ['Leadership', 'Scalability Design'],
-                learning_resources: ['Leadership in Tech - LinkedIn Learning', 'Designing Data-Intensive Applications'],
-                resume_tips: ['Show leadership roles', 'Quantify business outcomes', 'Focus on architecture & strategy']
-            };
-        }
-
-        res.json({ prompt_type: "Dynamic", prompt_used: dynamicPrompt, plan: aiResponse });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+// 🟢 Dynamic Prompting
+app.post("/dynamic", async (req, res) => {
+  res.json(await dynamicPrompt(genAI, req.body.userInput));
 });
 
-// Start Server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-});
+// --------------------------------
+
+const PORT = 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
 
 
 
