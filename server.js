@@ -160,7 +160,7 @@ app.post("/api/topp", async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error in /api/topp:", error);
-    res.status(500).json({ error: "Something went wrong" });
+    res.status(500).json({ error: "Something went wrong", error });
   }
 });
 
