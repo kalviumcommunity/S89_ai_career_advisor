@@ -112,6 +112,33 @@ app.post("/api/prompt", async (req, res) => {
   }
 });
 
+
+app.post("/api/temperature", async (req, res) => {
+  try {
+    const { query, temperature } = req.body;
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-pro",
+    });
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: query }] }],
+      generationConfig: {
+        temperature: temperature || 0.7, // default 0.7
+      },
+    });
+
+    res.json({
+      query,
+      response: result.response.text(),
+      usedTemperature: temperature || 0.7,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
