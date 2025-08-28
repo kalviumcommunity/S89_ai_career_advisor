@@ -64,9 +64,11 @@
 
 
 // server.js
+// server.js
 import express from "express";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { zeroShotPrompt } from "./prompts/zeroShot.js";
 import { oneShotPrompt } from "./prompts/oneShot.js";
@@ -80,9 +82,13 @@ const PORT = process.env.PORT || 5000;
 
 app.use(bodyParser.json());
 
+// 🟢 Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// ---------------- PROMPT ROUTES ----------------
 app.post("/api/prompt", async (req, res) => {
   try {
-    const { type, input, examples } = req.body;
+    const { type, input } = req.body;
     let response;
 
     switch (type) {
@@ -107,25 +113,21 @@ app.post("/api/prompt", async (req, res) => {
 
     res.json({ response });
   } catch (error) {
-    console.error("Error:", error);
+    console.error("❌ Error in /api/prompt:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-
+// ---------------- TEMPERATURE ROUTE ----------------
 app.post("/api/temperature", async (req, res) => {
   try {
     const { query, temperature } = req.body;
 
-    const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-pro",
-    });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const result = await model.generateContent({
       contents: [{ role: "user", parts: [{ text: query }] }],
-      generationConfig: {
-        temperature: temperature || 0.7, // default 0.7
-      },
+      generationConfig: { temperature: temperature || 0.7 },
     });
 
     res.json({
@@ -134,14 +136,39 @@ app.post("/api/temperature", async (req, res) => {
       usedTemperature: temperature || 0.7,
     });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Error in /api/temperature:", error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+// ---------------- TOP-P ROUTE ----------------
+app.post("/api/topp", async (req, res) => {
+  try {
+    const { query, topP } = req.body;
+
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: query }] }],
+      generationConfig: { topP: topP || 0.8 },
+    });
+
+    res.json({
+      query,
+      response: result.response.text(),
+      usedTopP: topP || 0.8,
+    });
+  } catch (error) {
+    console.error("❌ Error in /api/topp:", error);
+    res.status(500).json({ error: "Something went wrong", error });
+  }
 });
+
+// ---------------- START SERVER ----------------
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});
+
 
 
 
